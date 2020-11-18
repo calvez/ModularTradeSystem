@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                          TSControllerFactory.mqh |
-//|                                    Copyright 2020, Michael Wade. |
-//|                                             michaelwade@yeah.net |
+//|                                    Copyright 2020, @calvez. |
+//|                                             https://t.me/calvez |
 //+------------------------------------------------------------------+
 #property strict
 
