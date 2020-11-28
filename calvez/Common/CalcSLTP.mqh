@@ -22,6 +22,8 @@ double StopLossATRPips = 0;
 double adr;
 string  modmsg;
 string line = "--------------------------------------------------------";
+
+
 double GetAtr(string symbol, int tf, int period, int shift)
 {
    //Returns the value of atr
@@ -29,7 +31,6 @@ double GetAtr(string symbol, int tf, int period, int shift)
    return(iATR(symbol, tf, period, shift) );   
 
 }//End double GetAtr()
-
 
 double CalculateSLBuy(int ticket,double Xfactor,int Xdigits)
 {
@@ -46,6 +47,10 @@ double CalculateSLBuy(int ticket,double Xfactor,int Xdigits)
       if(adr==0)adr=MathAbs(iHigh(_Symbol,PERIOD_W1,1)-iLow(_Symbol,PERIOD_W1,1));
       StopLossATRPips = NormalizeDouble((atrMultiplicatorForStopLoss*adr*Xfactor),0);
      }
+   else
+   {
+      StopLossATRPips=StopLossPoints/10;
+   }       
 
    CalculatedBuySL=NormalizeDouble(OrderOpenPrice()-(StopLossATRPips/Xfactor),Xdigits);
    if(OrderType()==OP_BUY)
@@ -75,6 +80,10 @@ double CalculateSLSell(int ticket,double Xfactor,int Xdigits)
       if(adr==0)adr=MathAbs(iHigh(_Symbol,PERIOD_W1,1)-iLow(_Symbol,PERIOD_W1,1));
       StopLossATRPips =NormalizeDouble((atrMultiplicatorForStopLoss*adr*Xfactor),0);
      }
+   else
+   {
+      StopLossATRPips=StopLossPoints/10;
+   }     
    CalculatedSellSL=NormalizeDouble(OrderOpenPrice()+(StopLossATRPips/Xfactor),Xdigits);
    if(OrderType()==OP_SELL)
      {
@@ -101,6 +110,10 @@ double CalculateTPBuy(int ticket,double Xfactor,int Xdigits)
       if(adr==0)adr=MathAbs(iHigh(_Symbol,PERIOD_W1,1)-iLow(_Symbol,PERIOD_W1,1));
       TakeProfitATRPips=NormalizeDouble((atrMultiplicatorForTakeProfit*adr*Xfactor),0);
      }
+   else
+   {
+      TakeProfitATRPips=TakeProfitPoints/10;
+   }     
    CalculatedBuyTP=NormalizeDouble(OrderOpenPrice()+(TakeProfitATRPips/Xfactor),Xdigits);
    if(bid>CalculatedBuyTP-minDistanceSLTP/Xfactor)
      {
@@ -126,6 +139,10 @@ double CalculateTPSell(int ticket,double Xfactor,int Xdigits)
       if(adr==0)adr=MathAbs(iHigh(_Symbol,PERIOD_W1,1)-iLow(_Symbol,PERIOD_W1,1));
       TakeProfitATRPips=NormalizeDouble((atrMultiplicatorForTakeProfit*adr*Xfactor),0);
      }
+   else
+   {
+      TakeProfitATRPips=TakeProfitPoints/10;
+   }
    CalculatedSellTP=NormalizeDouble(OrderOpenPrice()-(TakeProfitATRPips/Xfactor),Xdigits);
    if(ask<CalculatedSellTP-minDistanceSLTP/Xfactor)
      {
