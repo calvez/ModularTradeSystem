@@ -11,143 +11,221 @@
 //+------------------------------------------------------------------+
 
 #property strict
-int NumOfDays_D = 1;
-bool M6_enabled = true;
-bool M6_Trading_weighting = true;
-int Recent_Days_Weighting = 5;
-bool Weighting_to_ADR_percentage = true;
-int NumOfDays_6M = 180;
 
-int      DistanceL, DistanceHv, DistanceH, Distance6Mv, Distance6M, DistanceMv, DistanceM, DistanceYv, DistanceY, DistanceADRv, DistanceADR, Distance6Mv_new, Distance6M_new;
+#include "..\Common\Log.mqh"
 
-double pnt;
-int    dig;
-string objname = "DRPE";
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-class CSumDays
-{
-public:
-   double            m_sum;
-   int               m_days;
-                     CSumDays(double sum, int days)
-   {
-      m_sum = sum;
-      m_days = days;
-   }
-};
- double TodayOpenBuffer[];
-//+------------------------------------------------------------------+
-int initADR()
-{
-   //+------------------------------------------------------------------+
-   pnt = MarketInfo(Symbol(), MODE_POINT);
-   dig = MarketInfo(Symbol(), MODE_DIGITS);
-   if(dig == 3 || dig == 5)
-   {
-      pnt *= 10;
-   }
-   return(0);
-}
+extern string  About = "<<< Automatic SL and TP manager >>>";
 
-//+------------------------------------------------------------------+
-int startADR()
-{
-   int lastbar;
-   int counted_bars= IndicatorCounted();
-   if (counted_bars>0) counted_bars--;
-   lastbar = Bars-counted_bars;	
-   
-  
-//+------------------------------------------------------------------+
-   CSumDays sum_day(0, 0);
-   CSumDays sum_m(0, 0);
-   CSumDays sum_6m(0, 0);
-   CSumDays sum_6m_add(0, 0);
-   range(NumOfDays_D, sum_day);
-   range(GridAtrPeriod, sum_m);
-   range(NumOfDays_6M, sum_6m);
-   range(Recent_Days_Weighting, sum_6m_add);
-   double hi = iHigh(NULL, PERIOD_D1, 0);
-   double lo = iLow(NULL, PERIOD_D1, 0);
-   if(pnt > 0)
-   {
-      string Y, M, M6, H, L, ADR;
-      double m, m6, h, l;
-      Y = DoubleToStr(sum_day.m_sum / sum_day.m_days / pnt, 0);
-      m = sum_m.m_sum / sum_m.m_days / pnt;
-      M = DoubleToStr(sum_m.m_sum / sum_m.m_days / pnt, 0);
-      m6 = sum_6m.m_sum / sum_6m.m_days;
-      h = (hi - Bid) / pnt;
-      H = DoubleToStr((hi - Bid) / pnt, 0);
-      l = (Bid - lo) / pnt;
-      L = DoubleToStr((Bid - lo) / pnt, 0);
-      Print("Y: " + Y, " M: " + M, " H: " + H, " L: " + H); 
-      if(m6 == 0) return 0;
-      double ADR_val;
-      if(Weighting_to_ADR_percentage)
-      {
-        double WADR = ((iHigh(NULL, PERIOD_D1, 0) - iLow(NULL, PERIOD_D1, 0)) + (iHigh(NULL, PERIOD_D1, 1) - iLow(NULL, PERIOD_D1, 1)) + (iHigh(NULL, PERIOD_D1, 2) - iLow(NULL, PERIOD_D1, 2)) +
-                       (iHigh(NULL, PERIOD_D1, 3) - iLow(NULL, PERIOD_D1, 3)) + (iHigh(NULL, PERIOD_D1, 4) - iLow(NULL, PERIOD_D1, 4))) / 5;
-        double val = (m6 + WADR) / 2 / pnt;
-        ADR_val=(h + l) / val * 100;
-        ADR = DoubleToStr(ADR_val, 0);
-        Print("Weighting_to_ADR_percentage: " + ADR); 
-      }
-      else
-      {
-        ADR_val=(h + l) / (m6 / pnt) * 100;
-        ADR = DoubleToStr(ADR_val, 0);
-        Print(" ! Weighting_to_ADR_percentage: " + ADR); 
-      }
-      if(M6_Trading_weighting)
-      {
-         m6 = (m6 + sum_6m_add.m_sum / sum_6m_add.m_days) / 2;        
-      }
-      m6 = m6 / pnt;
-      M6 = DoubleToStr(m6, 0);
-      Print("m6: " + M6); 
+extern bool    Set_StopLoss = true;
+extern bool    Set_TakeProfit = true;
 
-      
+// StopLoss
+extern string  SLExp = "<<< StopLoss >>>";
+extern string  StopLossExp = "1=Fixed Pips  2=ATR Multiple";
+extern int     StopLoss_Method = 2 ;
+extern int     Fixed_SL = 50;
+extern double  StopLoss_ATR = 2.5;
 
-   }
-    double Yesterday = sum_day.m_sum / sum_day.m_days / pnt;
-    Comment("Yesterday RANGE (" + DoubleToStr(Yesterday, 0) + ")");
+// TakeProfit
+extern string  TPExp = "<<< TakeProfit >>>";
+extern string  TakeProfitExp = "1=Fixed Pips  2=ATR Multiple";
+extern int     TakeProfit_Method = 2 ;
+extern int     Fixed_TP = 100;
+extern double  TakeProfit_ATR = 3.5 ;
 
-   return Yesterday;
-}
+// ATR Setting
+extern string  ATRExp = "<<< ATR Setting >>>";
+extern string  TF_note = "0=Chart 1=M1 2=M5 3=M15 4=M30 5=1H 6=4H 7=D1 8=W1 9=MN";
+extern int     ATR_TimeFrame = 6;
+extern int     ATR_Period = 14;
+
+extern string  ATRExpGrid = "<<< ATR GRID Setting >>>";
+extern bool    ATRGrid = true;   // Enable ATR for Grid steps
+extern string  TF_Gridnote = "0=Chart 1=M1 2=M5 3=M15 4=M30 5=1H 6=4H 7=D1 8=W1 9=MN";
+extern double  GridStep_ATR = 1;
+extern int     ATR_TimeGridFrame =5;
+extern int     ATR_GridPeriod = 14;
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void range(int days, CSumDays &sumdays)
-{
-   sumdays.m_days = 0;
-   sumdays.m_sum = 0;
-   for(int i = 1; i < Bars - 1; i++)
-   {
-      double hi = iHigh(NULL, PERIOD_D1, i);
-      double lo = iLow(NULL, PERIOD_D1, i);
-      datetime dt = iTime(NULL, PERIOD_D1, i);
-      if(TimeDayOfWeek(dt) > 0 && TimeDayOfWeek(dt) < 6)
-      {
-         sumdays.m_sum += hi - lo;
-         sumdays.m_days = sumdays.m_days + 1;
-         if(sumdays.m_days >= days) break;
-      }
-   }
-}
+int TF_Selector(int TIMEFRAME)
+  {
+   int TF;
+
+// Indicator Time Frame
+   switch(TIMEFRAME) // 0=Chart 1=M1 2=M5 3=M15 4=M30 5=1H 6=4H 7=D1 8=W1 9=MN
+     {
+      case 0 :
+         TF = 0;
+         break;
+      case 1 :
+         TF = 1;
+         break;
+      case 2 :
+         TF = 5;
+         break;
+      case 3 :
+         TF = 15;
+         break;
+      case 4 :
+         TF = 30;
+         break;
+      case 5 :
+         TF = 60;
+         break;
+      case 6 :
+         TF = 240;
+         break;
+      case 7 :
+         TF = 1440;
+         break;
+      case 8 :
+         TF = 10080;
+         break;
+      case 9 :
+         TF = 43200;
+         break;
+      default:
+         TF = 0;
+         break;
+     }
+
+   return(TF);
+  }
+
+
 
 //+------------------------------------------------------------------+
+//| SL_Decision                                                      |
+//+------------------------------------------------------------------+
+int SL_Decision(string SYMBOL)
+  {
+   if(StopLoss_Method>2 || StopLoss_Method<1)
+      StopLoss_Method = 1; // error correction
 
+   double SL = Fixed_SL * DeciQuoteAdjuster(SYMBOL) ;
+   if(StopLoss_Method == 2)
+      SL = (ATR(SYMBOL) * StopLoss_ATR) / MarketInfo(SYMBOL,MODE_POINT) ;
+
+   int Stoploss = (int)SL;
+
+   LogD(TAG,"Stoploss:" + IntegerToString(Stoploss));
+
+   return(Stoploss);
+  }
 
 //+------------------------------------------------------------------+
+//| TP_Decision                                                      |
+//+------------------------------------------------------------------+
+int TP_Decision(string SYMBOL)
+  {
+   if(TakeProfit_Method>2 || TakeProfit_Method<1)
+      TakeProfit_Method = 2; // error correction
 
-double GetAtr(string symbol, int tf, int period, int shift)
-{
-   //Returns the value of atr
+   double TP = Fixed_TP * DeciQuoteAdjuster(SYMBOL) ;
+   if(TakeProfit_Method == 2)
+      TP = (ATR(SYMBOL) * TakeProfit_ATR) / MarketInfo(SYMBOL,MODE_POINT) ;
+
+   int TakeProfit = (int)TP;
+
+   LogD(TAG,"Stoploss:" + IntegerToString(TakeProfit));
+
+   return(TakeProfit);
+  }
+//+------------------------------------------------------------------+
+//| Grid step                                                     |
+//+------------------------------------------------------------------+
+int ATR_grid(string SYMBOL)
+  {
+   double GS = (MartinInitPoints / 10) * DeciQuoteAdjuster(SYMBOL) ;
+   if(ATRGrid)
+      GS = (ATR(SYMBOL) * GridStep_ATR) / MarketInfo(SYMBOL,MODE_POINT) ;
+
+   int GridStep = (int)GS;
+
+   LogD(TAG,"Stoploss:" + IntegerToString(GridStep));
    
-   return(iATR(symbol, tf, period, shift) );   
+   return(GridStep);
+  }
+//+------------------------------------------------------------------+
+//| ATR                                                              |
+//+------------------------------------------------------------------+
+double ATR(string SYMBOL)
+  {
+   double ATR = iATR(SYMBOL,ATR_TF,ATR_Period,1);
+   return(ATR);
+  }
 
-}//End double GetAtr()
+//+------------------------------------------------------------------+
+//| SetStopLoss                                                      |
+//+------------------------------------------------------------------+
+void SetStopLoss()
+  {
+   int i,Type;
+   bool selected, success;
+
+   for(i=0; i<OrdersTotal(); i++)
+     {
+      selected = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+      if(selected && (OrderType() == OP_BUY || OrderType() == OP_SELL) && OrderStopLoss() < 1 * MarketInfo(OrderSymbol(),MODE_POINT))
+        {
+         Type = OrderType();
+         success = false;
+
+         if(Type == OP_BUY)
+            success = OrderModify(OrderTicket(), OrderOpenPrice(),OrderOpenPrice() - SL_Decision(OrderSymbol()) * MarketInfo(OrderSymbol(),MODE_POINT), OrderTakeProfit(), 0, CLR_NONE);
+         if(Type == OP_SELL)
+            success = OrderModify(OrderTicket(), OrderOpenPrice(),OrderOpenPrice() + SL_Decision(OrderSymbol()) * MarketInfo(OrderSymbol(),MODE_POINT), OrderTakeProfit(), 0, CLR_NONE);
+
+         if(success)
+            Print("Stoploss for "+OrderSymbol()+" has been placed automatically.") ;
+         if(!success)
+            Print("Error code = " + IntegerToString(GetLastError()));
+        }
+     }
+  } // end of SetStopLoss
+
+//+------------------------------------------------------------------+
+//| SetStopLoss                                                      |
+//+------------------------------------------------------------------+
+void SetTakeProfit()
+  {
+   int i,Type;
+   bool selected, success;
+
+   for(i=0; i<OrdersTotal(); i++)
+     {
+      selected = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+      if(selected && (OrderType() == OP_BUY || OrderType() == OP_SELL) && OrderTakeProfit() < 1 * MarketInfo(OrderSymbol(),MODE_POINT))
+        {
+         Type = OrderType();
+         success = false;
+
+         if(Type == OP_BUY)
+            success = OrderModify(OrderTicket(), OrderOpenPrice(), OrderStopLoss(), OrderOpenPrice() + TP_Decision(OrderSymbol()) * MarketInfo(OrderSymbol(),MODE_POINT), 0, CLR_NONE);
+         if(Type == OP_SELL)
+            success = OrderModify(OrderTicket(), OrderOpenPrice(), OrderStopLoss(), OrderOpenPrice() - TP_Decision(OrderSymbol()) * MarketInfo(OrderSymbol(),MODE_POINT), 0, CLR_NONE);
+
+         if(success)
+            Print("TakeProfit for "+OrderSymbol()+" has been placed automatically.") ;
+         if(!success)
+            Print("Error code = " + IntegerToString(GetLastError()));
+        }
+     }
+  } // end of SetStopLoss
+
+//+------------------------------------------------------------------+
+//| Deci Quote Adjuster                                              |
+//+------------------------------------------------------------------+
+int DeciQuoteAdjuster(string SYMBOL)
+  {
+   int DQADJ = 1;
+   int DIGITS = (int)MarketInfo(SYMBOL,MODE_DIGITS);
+   if(DIGITS == 5 || DIGITS == 3)
+      DQADJ = 10;
+
+   return(DQADJ);
+  }
+
+//+------------------------------------------------------------------+
